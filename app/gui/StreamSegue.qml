@@ -102,7 +102,7 @@ Item {
 
     StackView.onDeactivating: {
         // Show the toolbar again when popped off the stack
-        toolBar.visible = true
+        window.chromeVisible = true
 
         // Re-enable GUI gamepad usage now
         SdlGamepadKeyNavigation.enable()
@@ -110,7 +110,7 @@ Item {
 
     StackView.onActivated: {
         // Hide the toolbar before we start loading
-        toolBar.visible = false
+        window.chromeVisible = false
 
         // Hook up our signals
         session.stageStarting.connect(stageStarting)

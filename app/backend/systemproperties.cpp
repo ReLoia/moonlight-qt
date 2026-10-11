@@ -3,6 +3,7 @@
 
 #include <QGuiApplication>
 #include <QLibraryInfo>
+#include <QProcess>
 
 #include "streaming/session.h"
 #include "streaming/streamutils.h"
@@ -213,6 +214,20 @@ void SystemProperties::waitForAsyncLoad()
     if (systemPropertyQueryThread) {
         systemPropertyQueryThread->wait();
     }
+}
+
+void SystemProperties::powerOff()
+{
+#ifdef Q_OS_WIN32
+    QProcess::startDetached("shutdown", QStringList() << "/s" << "/t" << "0");
+#elif defined(Q_OS_DARWIN)
+    QProcess::startDetached("osascript", QStringList() << "-e" << "tell app \"System Events\" to shut down");
+#else
+    // systemctl works from an unprivileged desktop session on systemd systems
+    if (!QProcess::startDetached("systemctl", QStringList() << "poweroff")) {
+        QProcess::startDetached("shutdown", QStringList() << "-h" << "now");
+    }
+#endif
 }
 
 void SystemProperties::refreshDisplays()

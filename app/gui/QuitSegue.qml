@@ -35,7 +35,7 @@ Item {
 
     StackView.onActivated: {
         // Hide the toolbar before we start loading
-        toolBar.visible = false
+        window.chromeVisible = false
 
         // Connect the quit completion signal
         ComputerManager.quitAppCompleted.connect(quitAppCompleted)
@@ -48,7 +48,7 @@ Item {
 
     StackView.onDeactivating: {
         // Show the toolbar again
-        toolBar.visible = true
+        window.chromeVisible = true
 
         // Disconnect the signal
         ComputerManager.quitAppCompleted.disconnect(quitAppCompleted)

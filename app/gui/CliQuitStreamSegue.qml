@@ -20,7 +20,7 @@ Item {
 
     StackView.onActivated: {
         if (!launcher.isExecuted()) {
-            toolBar.visible = false
+            window.chromeVisible = false
             launcher.searchingComputer.connect(onSearchingComputer)
             launcher.quittingApp.connect(onQuittingApp)
             launcher.failed.connect(onFailure)

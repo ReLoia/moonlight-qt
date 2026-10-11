@@ -43,6 +43,10 @@ public:
     Q_INVOKABLE void waitForAsyncLoad();
     Q_INVOKABLE void refreshDisplays();
 
+    // Powers off the local machine. Used by the home screen power button
+    // after explicit user confirmation.
+    Q_INVOKABLE void powerOff();
+
 signals:
     void unmappedGamepadsChanged();
     void hasHardwareAccelerationChanged();

@@ -195,6 +195,15 @@ void SdlInputHandler::handleKeyEvent(SDL_KeyboardEvent* event)
         return;
     }
 
+    // F15 quits the stream without requiring any modifiers,
+    // as an alternative to Ctrl+Alt+Shift+Q
+    if (event->state == SDL_PRESSED &&
+            (event->keysym.sym == SDLK_F15 ||
+             event->keysym.scancode == SDL_SCANCODE_F15)) {
+        performSpecialKeyCombo(KeyComboQuit);
+        return;
+    }
+
     // Check for our special key combos
     if ((event->state == SDL_PRESSED) &&
             (event->keysym.mod & KMOD_CTRL) &&

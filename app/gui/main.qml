@@ -12,6 +12,7 @@ import SdlGamepadKeyNavigation 1.0
 
 ApplicationWindow {
     property bool pollingActive: false
+    property bool chromeVisible: true
 
     // Set by SettingsView to force the back operation to pop all
     // pages except the initial view. This is required when doing
@@ -106,6 +107,25 @@ ApplicationWindow {
         }
     }
 
+    function openSettingsView()
+    {
+        var existingItem = stackView.find(function(item, index) {
+            return item.objectName === qsTr("Settings")
+        })
+
+        if (existingItem !== null) {
+            stackView.pop(existingItem)
+        }
+        else {
+            stackView.push("qrc:/gui/SettingsView.qml")
+        }
+    }
+
+    Shortcut {
+        sequence: StandardKey.Preferences
+        onActivated: openSettingsView()
+    }
+
     StackView {
         id: stackView
         anchors.fill: parent
@@ -119,9 +139,17 @@ ApplicationWindow {
         }
 
         onCurrentItemChanged: {
-            // Ensure focus travels to the next view when going back
+            // Ensure focus travels to the next view when going back.
+            // Views with a carousel expose it as focusTarget so that
+            // keyboard/controller navigation works immediately, which
+            // is critical on controller-only systems.
             if (currentItem) {
-                currentItem.forceActiveFocus()
+                if (currentItem.focusTarget) {
+                    currentItem.focusTarget.forceActiveFocus()
+                }
+                else {
+                    currentItem.forceActiveFocus()
+                }
             }
         }
 
@@ -144,15 +172,208 @@ ApplicationWindow {
         }
 
         Keys.onMenuPressed: {
-            settingsButton.clicked()
+            openSettingsView()
         }
 
         // This is a keypress we've reserved for letting the
         // SdlGamepadKeyNavigation object tell us to show settings
         // when Menu is consumed by a focused control.
         Keys.onHangupPressed: {
-            settingsButton.clicked()
+            openSettingsView()
         }
+    }
+
+    // Floating navigation chrome (no top bar): back button when drilled in,
+    // plus update/help/discord affordances without a full toolbar.
+    ToolButton {
+        id: backButton
+        visible: chromeVisible && stackView.depth > 1
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.topMargin: 12
+        anchors.leftMargin: 12
+        width: 48
+        height: 48
+        z: 100
+        focusPolicy: Qt.TabFocus
+        hoverEnabled: true
+
+        icon.source: "qrc:/res/arrow_left.svg"
+        icon.width: 32
+        icon.height: 32
+
+        background: Rectangle {
+            implicitWidth: 48
+            implicitHeight: 48
+            radius: 24
+            color: backButton.hovered || backButton.activeFocus ? "#4a4a4a" : "#333333"
+            opacity: 0.85
+            border.color: backButton.activeFocus ? "#7fb8ff" : "transparent"
+            border.width: 2
+        }
+
+        ToolTip.delay: 1000
+        ToolTip.timeout: 3000
+        ToolTip.visible: hovered
+        ToolTip.text: qsTr("Back")
+
+        onClicked: goBack()
+
+        function focusCurrentView(reason) {
+            var item = stackView.currentItem
+            if (item && item.focusTarget) {
+                item.focusTarget.forceActiveFocus(reason)
+            }
+            else if (item && reason !== Qt.TabFocusReason && reason !== Qt.BacktabFocusReason) {
+                item.forceActiveFocus(reason)
+            }
+        }
+
+        Keys.onDownPressed: {
+            focusCurrentView(Qt.TabFocusReason)
+        }
+        Keys.onTabPressed: {
+            focusCurrentView(Qt.TabFocusReason)
+        }
+        Keys.onBacktabPressed: {
+            focusCurrentView(Qt.BacktabFocusReason)
+        }
+        Keys.onReturnPressed: clicked()
+        Keys.onEnterPressed: clicked()
+    }
+
+    Row {
+        id: floatingTopRight
+        visible: chromeVisible
+
+        ToolButton {
+            id: settingsFloatingButton
+            visible: stackView.depth > 1 &&
+                     stackView.currentItem && stackView.currentItem.objectName !== qsTr("Settings")
+            width: 48
+            height: 48
+            hoverEnabled: true
+
+            icon.source: "qrc:/res/settings.svg"
+            icon.width: 30
+            icon.height: 30
+
+            background: Rectangle {
+                implicitWidth: 48
+                implicitHeight: 48
+                radius: 24
+                color: settingsFloatingButton.hovered || settingsFloatingButton.activeFocus ? "#4a4a4a" : "#333333"
+                opacity: 0.85
+                border.color: settingsFloatingButton.activeFocus ? "#7fb8ff" : "transparent"
+                border.width: 2
+            }
+
+            ToolTip.delay: 1000
+            ToolTip.timeout: 3000
+            ToolTip.visible: hovered
+            ToolTip.text: qsTr("Settings")
+
+            onClicked: openSettingsView()
+
+            Keys.onReturnPressed: clicked()
+            Keys.onEnterPressed: clicked()
+        }
+        anchors.top: parent.top
+        anchors.right: parent.right
+        anchors.topMargin: 12
+        anchors.rightMargin: 12
+        spacing: 8
+        z: 100
+
+        Label {
+            id: versionLabel
+            visible: stackView.currentItem && stackView.currentItem.objectName === qsTr("Settings")
+            text: qsTr("Version %1").arg(SystemProperties.versionString)
+            font.pointSize: 12
+            horizontalAlignment: Qt.AlignRight
+            verticalAlignment: Qt.AlignVCenter
+            anchors.verticalCenter: parent.verticalCenter
+        }
+
+        ToolButton {
+            id: updateButton
+            property string browserUrl: ""
+
+            width: 48
+            height: 48
+            hoverEnabled: true
+
+            icon.source: "qrc:/res/update.svg"
+            icon.width: 32
+            icon.height: 32
+
+            background: Rectangle {
+                implicitWidth: 48
+                implicitHeight: 48
+                radius: 24
+                color: updateButton.hovered || updateButton.activeFocus ? "#4a4a4a" : "#333333"
+                opacity: 0.85
+                border.color: updateButton.activeFocus ? "#7fb8ff" : "transparent"
+                border.width: 2
+            }
+
+            ToolTip.delay: 1000
+            ToolTip.timeout: 3000
+            ToolTip.visible: hovered
+
+            // Invisible until we get a callback notifying us that
+            // an update is available
+            visible: false
+
+            onClicked: {
+                if (SystemProperties.hasBrowser) {
+                    Qt.openUrlExternally(browserUrl);
+                }
+            }
+
+            function updateAvailable(version, url)
+            {
+                ToolTip.text = qsTr("Update available for Moonlight: Version %1").arg(version)
+                updateButton.browserUrl = url
+                updateButton.visible = true
+            }
+
+            Component.onCompleted: {
+                AutoUpdateChecker.onUpdateAvailable.connect(updateAvailable)
+                AutoUpdateChecker.start()
+            }
+        }
+
+        ToolButton {
+            id: discordButton
+            visible: SystemProperties.hasBrowser &&
+                     stackView.currentItem && stackView.currentItem.objectName === qsTr("Settings")
+            width: 48
+            height: 48
+            hoverEnabled: true
+
+            icon.source: "qrc:/res/discord.svg"
+            icon.width: 32
+            icon.height: 32
+
+            background: Rectangle {
+                implicitWidth: 48
+                implicitHeight: 48
+                radius: 24
+                color: discordButton.hovered || discordButton.activeFocus ? "#4a4a4a" : "#333333"
+                opacity: 0.85
+                border.color: discordButton.activeFocus ? "#7fb8ff" : "transparent"
+                border.width: 2
+            }
+
+            ToolTip.delay: 1000
+            ToolTip.timeout: 3000
+            ToolTip.visible: hovered
+            ToolTip.text: qsTr("Join our community on Discord")
+
+            onClicked: Qt.openUrlExternally("https://moonlight-stream.org/discord");
+        }
+
     }
 
     // This timer keeps us polling for 5 minutes of inactivity
@@ -233,218 +454,9 @@ ApplicationWindow {
         }
     }
 
-    header: ToolBar {
-        id: toolBar
-        height: 60
-        anchors.topMargin: 5
-        anchors.bottomMargin: 5
-
-        Label {
-            id: titleLabel
-            visible: toolBar.width > 700
-            anchors.fill: parent
-            text: stackView.currentItem.objectName
-            font.pointSize: 20
-            elide: Label.ElideRight
-            horizontalAlignment: Qt.AlignHCenter
-            verticalAlignment: Qt.AlignVCenter
-        }
-
-        RowLayout {
-            spacing: 10
-            anchors.leftMargin: 10
-            anchors.rightMargin: 10
-            anchors.fill: parent
-
-            NavigableToolButton {
-                // Only make the button visible if the user has navigated somewhere.
-                visible: stackView.depth > 1
-
-                iconSource: "qrc:/res/arrow_left.svg"
-
-                onClicked: goBack()
-
-                Keys.onDownPressed: {
-                    stackView.currentItem.forceActiveFocus(Qt.TabFocus)
-                }
-            }
-
-            // This label will appear when the window gets too small and
-            // we need to ensure the toolbar controls don't collide
-            Label {
-                id: titleRowLabel
-                font.pointSize: titleLabel.font.pointSize
-                elide: Label.ElideRight
-                horizontalAlignment: Qt.AlignHCenter
-                verticalAlignment: Qt.AlignVCenter
-                Layout.fillWidth: true
-
-                // We need this label to always be visible so it can occupy
-                // the remaining space in the RowLayout. To "hide" it, we
-                // just set the text to empty string.
-                text: !titleLabel.visible ? stackView.currentItem.objectName : ""
-            }
-
-            Label {
-                id: versionLabel
-                visible: stackView.currentItem instanceof SettingsView
-                text: qsTr("Version %1").arg(SystemProperties.versionString)
-                font.pointSize: 12
-                horizontalAlignment: Qt.AlignRight
-                verticalAlignment: Qt.AlignVCenter
-            }
-
-            NavigableToolButton {
-                id: discordButton
-                visible: SystemProperties.hasBrowser &&
-                         stackView.currentItem instanceof SettingsView
-
-                iconSource: "qrc:/res/discord.svg"
-
-                ToolTip.delay: 1000
-                ToolTip.timeout: 3000
-                ToolTip.visible: hovered
-                ToolTip.text: qsTr("Join our community on Discord")
-
-                // TODO need to make sure browser is brought to foreground.
-                onClicked: Qt.openUrlExternally("https://moonlight-stream.org/discord");
-
-                Keys.onDownPressed: {
-                    stackView.currentItem.forceActiveFocus(Qt.TabFocus)
-                }
-            }
-
-            NavigableToolButton {
-                id: addPcButton
-                visible: stackView.currentItem instanceof PcView
-
-                iconSource:  "qrc:/res/ic_add_to_queue_white_48px.svg"
-
-                ToolTip.delay: 1000
-                ToolTip.timeout: 3000
-                ToolTip.visible: hovered
-                ToolTip.text: qsTr("Add PC manually") + (newPcShortcut.nativeText ? (" ("+newPcShortcut.nativeText+")") : "")
-
-                Shortcut {
-                    id: newPcShortcut
-                    sequence: StandardKey.New
-                    onActivated: addPcButton.clicked()
-                }
-
-                onClicked: {
-                    addPcDialog.open()
-                }
-
-                Keys.onDownPressed: {
-                    stackView.currentItem.forceActiveFocus(Qt.TabFocus)
-                }
-            }
-
-            NavigableToolButton {
-                property string browserUrl: ""
-
-                id: updateButton
-
-                iconSource: "qrc:/res/update.svg"
-
-                ToolTip.delay: 1000
-                ToolTip.timeout: 3000
-                ToolTip.visible: hovered || visible
-
-                // Invisible until we get a callback notifying us that
-                // an update is available
-                visible: false
-
-                onClicked: {
-                    if (SystemProperties.hasBrowser) {
-                        Qt.openUrlExternally(browserUrl);
-                    }
-                }
-
-                function updateAvailable(version, url)
-                {
-                    ToolTip.text = qsTr("Update available for Moonlight: Version %1").arg(version)
-                    updateButton.browserUrl = url
-                    updateButton.visible = true
-                }
-
-                Component.onCompleted: {
-                    AutoUpdateChecker.onUpdateAvailable.connect(updateAvailable)
-                    AutoUpdateChecker.start()
-                }
-
-                Keys.onDownPressed: {
-                    stackView.currentItem.forceActiveFocus(Qt.TabFocus)
-                }
-            }
-
-            NavigableToolButton {
-                id: helpButton
-                visible: SystemProperties.hasBrowser
-
-                iconSource: "qrc:/res/question_mark.svg"
-
-                ToolTip.delay: 1000
-                ToolTip.timeout: 3000
-                ToolTip.visible: hovered
-                ToolTip.text: qsTr("Help") + (helpShortcut.nativeText ? (" ("+helpShortcut.nativeText+")") : "")
-
-                Shortcut {
-                    id: helpShortcut
-                    sequence: StandardKey.HelpContents
-                    onActivated: helpButton.clicked()
-                }
-
-                // TODO need to make sure browser is brought to foreground.
-                onClicked: Qt.openUrlExternally("https://github.com/moonlight-stream/moonlight-docs/wiki/Setup-Guide");
-
-                Keys.onDownPressed: {
-                    stackView.currentItem.forceActiveFocus(Qt.TabFocus)
-                }
-            }
-
-            NavigableToolButton {
-                // TODO: Implement gamepad mapping then unhide this button
-                visible: false
-
-                ToolTip.delay: 1000
-                ToolTip.timeout: 3000
-                ToolTip.visible: hovered
-                ToolTip.text: qsTr("Gamepad Mapper")
-
-                iconSource: "qrc:/res/ic_videogame_asset_white_48px.svg"
-
-                onClicked: navigateTo("qrc:/gui/GamepadMapper.qml", GamepadMapper)
-
-                Keys.onDownPressed: {
-                    stackView.currentItem.forceActiveFocus(Qt.TabFocus)
-                }
-            }
-
-            NavigableToolButton {
-                id: settingsButton
-
-                iconSource:  "qrc:/res/settings.svg"
-
-                onClicked: navigateTo("qrc:/gui/SettingsView.qml", SettingsView)
-
-                Keys.onDownPressed: {
-                    stackView.currentItem.forceActiveFocus(Qt.TabFocus)
-                }
-
-                Shortcut {
-                    id: settingsShortcut
-                    sequence: StandardKey.Preferences
-                    onActivated: settingsButton.clicked()
-                }
-
-                ToolTip.delay: 1000
-                ToolTip.timeout: 3000
-                ToolTip.visible: hovered
-                ToolTip.text: qsTr("Settings") + (settingsShortcut.nativeText ? (" ("+settingsShortcut.nativeText+")") : "")
-            }
-        }
-    }
+    // Top bar removed: home view is a fullscreen login-manager style
+    // carousel with its own settings gear. Floating buttons above
+    // provide back/update/help navigation without a toolbar.
 
     ErrorMessageDialog {
         id: noHwDecoderDialog

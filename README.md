@@ -10,6 +10,14 @@ You can follow development on our [Discord server](https://moonlight-stream.org/
  [![Downloads](https://img.shields.io/github/downloads/moonlight-stream/moonlight-qt/total)](https://github.com/moonlight-stream/moonlight-qt/releases)
  [![Translation Status](https://hosted.weblate.org/widgets/moonlight/-/moonlight-qt/svg-badge.svg)](https://hosted.weblate.org/projects/moonlight/moonlight-qt/)
 
+# What this fork changes:
+It is a personal fork that enhances UI and has some personal changes.
+ - Made the UI much better looking by:
+ - removing the top bar and unnecessary stuff
+ - centered hosts and games
+ - Made the UX better by upgrading how it works with the controller and HDMI CEC mapped remotes (via hwdb)
+ - removed unnecessary stuff
+
 ## Features
  - Hardware accelerated video decoding on Windows, Mac, and Linux
  - H.264, HEVC, and AV1 codec support (AV1 requires Sunshine and a supported host GPU)
@@ -21,40 +29,7 @@ You can follow development on our [Discord server](https://moonlight-stream.org/
  - Support for both pointer capture (for games) and direct mouse control (for remote desktop)
  - Support for passing system-wide keyboard shortcuts like Alt+Tab to the host
  
-## Downloads
-- [Windows, macOS, and Steam Link](https://github.com/moonlight-stream/moonlight-qt/releases)
-- [Snap (for Ubuntu-based Linux distros)](https://snapcraft.io/moonlight)
-- [Flatpak (for other Linux distros)](https://flathub.org/apps/details/com.moonlight_stream.Moonlight)
-- [AppImage](https://github.com/moonlight-stream/moonlight-qt/releases)
-- [Raspberry Pi 4 and 5](https://github.com/moonlight-stream/moonlight-docs/wiki/Installing-Moonlight-Qt-on-Raspberry-Pi-4)
-- [Generic ARM 32-bit and 64-bit Debian packages](https://github.com/moonlight-stream/moonlight-docs/wiki/Installing-Moonlight-Qt-on-ARM%E2%80%90based-Single-Board-Computers) (not for Raspberry Pi)
-- [Experimental RISC-V Debian packages](https://github.com/moonlight-stream/moonlight-docs/wiki/Installing-Moonlight-Qt-on-RISC%E2%80%90V-Single-Board-Computers)
-- [NVIDIA Jetson and Nintendo Switch (Ubuntu L4T)](https://github.com/moonlight-stream/moonlight-docs/wiki/Installing-Moonlight-Qt-on-Linux4Tegra-(L4T)-Ubuntu)
-
-### Nightly Builds
-- [Downloads](https://nightly.link/moonlight-stream/moonlight-qt/workflows/build/master)
-
-#### Special Thanks
-
-[![Hosted By: Cloudsmith](https://img.shields.io/badge/OSS%20hosting%20by-cloudsmith-blue?logo=cloudsmith&style=flat-square)](https://cloudsmith.com)
-
-Hosting for Moonlight's Debian and L4T package repositories is graciously provided for free by [Cloudsmith](https://cloudsmith.com).
-
 ## Building
-
-### Windows Build Requirements
-* Qt 6.11 SDK or later (earlier versions may work but are not officially supported)
-* [Visual Studio 2026](https://visualstudio.microsoft.com/downloads/) (Community edition is fine)
-* Select **MSVC** option during Qt installation. MinGW is not supported.
-* [7-Zip](https://www.7-zip.org/) (only if building installers for non-development PCs)
-* Graphics Tools (only if running debug builds)
-  * Install "Graphics Tools" in the Optional Features page of the Windows Settings app.
-  * Alternatively, run `dism /online /add-capability /capabilityname:Tools.Graphics.DirectX~~~~0.0.1.0` and reboot.
-
-### macOS Build Requirements
-* Qt 6.11 SDK or later (earlier versions may work but are not officially supported)
-* Xcode 15 or later (earlier versions may work but are not officially supported)
-* [create-dmg](https://github.com/sindresorhus/create-dmg) (only if building DMGs for use on non-development Macs)
 
 ### Linux/Unix Build Requirements
 * Qt 6 is recommended, but Qt 5.12 or later is also supported (replace `qmake6` with `qmake` when using Qt 5).
@@ -65,22 +40,7 @@ Hosting for Moonlight's Debian and L4T package repositories is graciously provid
     * Base Requirements: `libegl1-mesa-dev libgl1-mesa-dev libopus-dev libsdl2-dev libsdl2-ttf-dev libssl-dev libavcodec-dev libavformat-dev libswscale-dev libva-dev libvdpau-dev libxkbcommon-dev wayland-protocols libdrm-dev`
     * Qt 6 (Recommended): `qt6-base-dev qt6-declarative-dev libqt6svg6-dev qt6-wayland qml6-module-qtquick-controls qml6-module-qtquick-templates qml6-module-qtquick-layouts qml6-module-qtqml-workerscript qml6-module-qtquick-window qml6-module-qtquick`
     * Qt 5: `qtbase5-dev qt5-qmake qtdeclarative5-dev qtquickcontrols2-5-dev qml-module-qtquick-controls2 qml-module-qtquick-layouts qml-module-qtquick-window2 qml-module-qtquick2 qtwayland5`
-  * RedHat/Fedora (RPM Fusion repo required):
-    * Base Requirements: `openssl-devel SDL2-devel SDL2_ttf-devel ffmpeg-devel libva-devel libvdpau-devel opus-devel pulseaudio-libs-devel alsa-lib-devel libdrm-devel`
-    * Qt 6 (Recommended): `qt6-qtsvg-devel qt6-qtdeclarative-devel`
-    * Qt 5: `qt5-qtsvg-devel qt5-qtquickcontrols2-devel`
 * Building the Vulkan renderer requires a `libplacebo-dev`/`libplacebo-devel` version of at least v7.349.0 and FFmpeg 6.1 or later.
-
-### Steam Link Build Requirements
-* [Steam Link SDK](https://github.com/ValveSoftware/steamlink-sdk) cloned on your build system
-* STEAMLINK_SDK_PATH environment variable set to the Steam Link SDK path
-
-**Steam Link Hardware Limitations**  
-Moonlight builds for Steam Link are subject to hardware limitations of the Steam Link device:
-* Maximum resolution: **1080p (1920x1080)**
-* Maximum framerate: **60 FPS**
-* Maximum video bitrate: **40 Mbps**
-* **HDR streaming is not supported** on the original hardware
 
 ### Docker containers
 If you want to use Docker for building, look at [this repo](https://github.com/cgutman/moonlight-packaging) containing canonical containers

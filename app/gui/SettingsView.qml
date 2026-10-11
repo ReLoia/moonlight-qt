@@ -16,6 +16,10 @@ Flickable {
 
     boundsBehavior: Flickable.OvershootBounds
 
+    // No top bar: Esc/Back returns to the previous view
+    Keys.onEscapePressed: window.goBack()
+    Keys.onBackPressed: window.goBack()
+
     contentWidth: settingsColumn1.width > settingsColumn2.width ? settingsColumn1.width : settingsColumn2.width
     contentHeight: settingsColumn1.height > settingsColumn2.height ? settingsColumn1.height : settingsColumn2.height
 
